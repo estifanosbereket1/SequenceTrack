@@ -20,6 +20,7 @@ export default function StyledAlert({ visible, title, message, buttons, onDismis
   const { colors } = useTheme();
 
   const handlePress = (btn: AlertButton) => {
+    onDismiss?.();
     btn.onPress?.();
   };
 
