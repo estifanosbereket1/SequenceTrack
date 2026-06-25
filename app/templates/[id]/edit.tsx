@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Alert, ScrollView,
+  View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, ScrollView,
 } from 'react-native';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { useTemplates } from '../../../src/context/TemplateContext';
+import { useAlert } from '../../../src/context/AlertContext';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { typography } from '../../../src/theme/typography';
@@ -27,6 +28,7 @@ export default function EditTemplateScreen() {
     addBlock, removeBlock, updateBlock, moveBlockUp, moveBlockDown,
     createTemplate,
   } = useTemplates();
+  const { showAlert } = useAlert();
   const router = useRouter();
 
   const [title, setTitle] = useState('');
@@ -48,11 +50,11 @@ export default function EditTemplateScreen() {
 
   const handleSaveTemplate = async () => {
     await updateTemplate(templateId, title, description);
-    Alert.alert('Saved', 'Template updated.');
+    showAlert('Saved', 'Template updated.');
   };
 
   const handleDeleteTemplate = () => {
-    Alert.alert('Delete Template', 'This cannot be undone.', [
+    showAlert('Delete Template', 'This cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
         await deleteTemplate(templateId);
@@ -155,7 +157,7 @@ export default function EditTemplateScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => {
-                Alert.alert('Delete Step', `Remove "${step.title}"?`, [
+                showAlert('Delete Step', `Remove "${step.title}"?`, [
                   { text: 'Cancel', style: 'cancel' },
                   { text: 'Delete', style: 'destructive', onPress: () => removeStep(step.id) },
                 ]);

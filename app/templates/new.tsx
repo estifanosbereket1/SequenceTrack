@@ -1,20 +1,22 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { useTemplates } from '../../src/context/TemplateContext';
+import { useAlert } from '../../src/context/AlertContext';
 import { useRouter } from 'expo-router';
 import { typography } from '../../src/theme/typography';
 
 export default function NewTemplateScreen() {
   const { colors } = useTheme();
   const { createTemplate } = useTemplates();
+  const { showAlert } = useAlert();
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
 
   const handleCreate = async () => {
     if (!title.trim()) {
-      Alert.alert('Title required', 'Please give your template a name.');
+      showAlert('Title required', 'Please give your template a name.');
       return;
     }
     const id = await createTemplate(title.trim(), description.trim());

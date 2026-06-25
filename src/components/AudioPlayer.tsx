@@ -84,12 +84,22 @@ export default function AudioPlayer({ uri, durationSeconds }: AudioPlayerProps) 
       setPlaying(false);
       clearTimer();
     } else {
+      if (duration > 0 && currentTime >= duration - 0.3) {
+        player.seekTo(0);
+        setCurrentTime(0);
+      }
       player.play();
       setPlaying(true);
       intervalRef.current = setInterval(() => {
-        setCurrentTime(player.currentTime ?? 0);
+        const ct = player.currentTime ?? 0;
+        setCurrentTime(ct);
         if (player.duration > 0 && player.duration !== duration) {
           setDuration(player.duration);
+        }
+        if (player.duration > 0 && ct >= player.duration - 0.3) {
+          player.pause();
+          setPlaying(false);
+          clearTimer();
         }
       }, 250);
     }

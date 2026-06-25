@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { useTemplates } from '../../../src/context/TemplateContext';
+import { useAlert } from '../../../src/context/AlertContext';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { typography } from '../../../src/theme/typography';
@@ -21,6 +22,7 @@ export default function QuickCaptureScreen() {
   const templateId = parseInt(id, 10);
   const { colors } = useTheme();
   const { addStep, addBlock } = useTemplates();
+  const { showAlert } = useAlert();
   const router = useRouter();
 
   const [blocks, setBlocks] = useState<QuickBlock[]>([]);
@@ -65,7 +67,7 @@ export default function QuickCaptureScreen() {
 
   const structureIntoSteps = async () => {
     if (blocks.length === 0) {
-      Alert.alert('Nothing to structure', 'Add some blocks first.');
+      showAlert('Nothing to structure', 'Add some blocks first.');
       return;
     }
 
@@ -81,7 +83,7 @@ export default function QuickCaptureScreen() {
       }
     }
 
-    Alert.alert('Done', `${blocks.length} block(s) added to step "${stepName}".`, [
+    showAlert('Done', `${blocks.length} block(s) added to step "${stepName}".`, [
       { text: 'Edit Template', onPress: () => router.replace(`/templates/${templateId}/edit` as any) },
       { text: 'OK', onPress: () => router.back() },
     ]);

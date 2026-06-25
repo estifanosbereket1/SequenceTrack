@@ -5,6 +5,7 @@ import { TemplateProvider } from '../src/context/TemplateContext';
 import { InstanceProvider } from '../src/context/InstanceContext';
 import { ReminderProvider } from '../src/context/ReminderContext';
 import { LearningProvider } from '../src/context/LearningContext';
+import { AlertProvider } from '../src/context/AlertContext';
 import { View, ActivityIndicator } from 'react-native';
 import { useEffect, useState } from 'react';
 import { getDb } from '../src/db/database';
@@ -59,15 +60,17 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <DbInitGate>
-        <TemplateProvider>
-          <InstanceProvider>
-            <ReminderProvider>
-              <LearningProvider>
-                <RootLayoutInner />
-              </LearningProvider>
-            </ReminderProvider>
-          </InstanceProvider>
-        </TemplateProvider>
+        <AlertProvider>
+          <TemplateProvider>
+            <InstanceProvider>
+              <ReminderProvider>
+                <LearningProvider>
+                  <RootLayoutInner />
+                </LearningProvider>
+              </ReminderProvider>
+            </InstanceProvider>
+          </TemplateProvider>
+        </AlertProvider>
       </DbInitGate>
     </ThemeProvider>
   );

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, Alert, Modal, Dimensions, Share,
+  View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, Modal, Dimensions, Share,
 } from 'react-native';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { useLearnings } from '../../../src/context/LearningContext';
+import { useAlert } from '../../../src/context/AlertContext';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { typography } from '../../../src/theme/typography';
@@ -18,6 +19,7 @@ export default function LearningDetailScreen() {
   const entryId = parseInt(id, 10);
   const { colors } = useTheme();
   const { currentEntry, loadEntry, deleteEntry } = useLearnings();
+  const { showAlert } = useAlert();
   const router = useRouter();
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
 
@@ -35,7 +37,7 @@ export default function LearningDetailScreen() {
   }
 
   const handleDelete = () => {
-    Alert.alert('Delete Entry', 'This cannot be undone.', [
+    showAlert('Delete Entry', 'This cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
         await deleteEntry(entryId);
@@ -50,10 +52,10 @@ export default function LearningDetailScreen() {
       if (isAvailable) {
         await Sharing.shareAsync(uri);
       } else {
-        Alert.alert('File', label || uri.split('/').pop() || 'Attachment');
+        showAlert('File', label || uri.split('/').pop() || 'Attachment');
       }
     } catch {
-      Alert.alert('Error', 'Could not open file.');
+      showAlert('Error', 'Could not open file.');
     }
   };
 

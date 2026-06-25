@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { useInstances } from '../../src/context/InstanceContext';
 import { useTemplates } from '../../src/context/TemplateContext';
+import { useAlert } from '../../src/context/AlertContext';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { typography } from '../../src/theme/typography';
@@ -14,6 +15,7 @@ export default function NewInstanceScreen() {
   const { colors } = useTheme();
   const { createInstanceFromTemplate } = useInstances();
   const { templates, loadTemplate, currentTemplate } = useTemplates();
+  const { showAlert } = useAlert();
   const router = useRouter();
 
   const template = templates.find(t => t.id === tid) ?? currentTemplate?.template;
@@ -35,7 +37,7 @@ export default function NewInstanceScreen() {
   const handleStart = async () => {
     if (!template) return;
     if (!name.trim()) {
-      Alert.alert('Name required', 'Give this instance a name.');
+      showAlert('Name required', 'Give this instance a name.');
       return;
     }
     const id = await createInstanceFromTemplate(template.id, name.trim());

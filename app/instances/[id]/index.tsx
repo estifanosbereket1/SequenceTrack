@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, FlatList, Alert, Share, TextI
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { useInstances } from '../../../src/context/InstanceContext';
 import { useReminders } from '../../../src/context/ReminderContext';
+import { useAlert } from '../../../src/context/AlertContext';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { typography } from '../../../src/theme/typography';
@@ -15,6 +16,7 @@ export default function InstanceDetailScreen() {
   const { colors } = useTheme();
   const { currentInstance, loadInstance, updateInstanceStatus, deleteInstance } = useInstances();
   const { scheduleReminder } = useReminders();
+  const { showAlert } = useAlert();
   const router = useRouter();
 
   const [showReminderPicker, setShowReminderPicker] = useState(false);
@@ -35,7 +37,7 @@ export default function InstanceDetailScreen() {
   };
 
   const handleDelete = () => {
-    Alert.alert('Delete Instance', 'This will remove all progress data.', [
+    showAlert('Delete Instance', 'This will remove all progress data.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
         await deleteInstance(instanceId);
@@ -57,7 +59,7 @@ export default function InstanceDetailScreen() {
               if (!text) return;
               const date = new Date(Date.now() + 86400000);
               scheduleReminder(instanceId, null, text, date, null);
-              Alert.alert('Reminder set', `For ${formatDateTime(date.toISOString())}`);
+              showAlert('Reminder set', `For ${formatDateTime(date.toISOString())}`);
             },
           },
         ],
@@ -65,7 +67,7 @@ export default function InstanceDetailScreen() {
         `Reminder: ${instance?.name ?? ''}`
       );
     } else {
-      Alert.alert('Schedule Reminder', 'Reminder scheduling text input not available on Android via Alert.');
+      showAlert('Schedule Reminder', 'Reminder scheduling text input not available on Android via Alert.');
     }
   };
 

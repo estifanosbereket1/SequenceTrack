@@ -5,6 +5,7 @@ import {
 import { useTheme } from '../../../../src/theme/ThemeProvider';
 import { useInstances } from '../../../../src/context/InstanceContext';
 import { useReminders } from '../../../../src/context/ReminderContext';
+import { useAlert } from '../../../../src/context/AlertContext';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { typography } from '../../../../src/theme/typography';
@@ -24,6 +25,7 @@ export default function StepDetailScreen() {
     addInstanceBlock, removeInstanceBlock,
   } = useInstances();
   const { scheduleReminder } = useReminders();
+  const { showAlert } = useAlert();
   const router = useRouter();
 
   const [addingBlock, setAddingBlock] = useState(false);
@@ -81,7 +83,7 @@ export default function StepDetailScreen() {
               if (!text) return;
               const date = new Date(Date.now() + 86400000);
               scheduleReminder(instanceId, stepIdNum, text, date, null);
-              Alert.alert('Reminder set', `For ${formatDateTime(date.toISOString())}`);
+              showAlert('Reminder set', `For ${formatDateTime(date.toISOString())}`);
             },
           },
         ],
@@ -89,7 +91,7 @@ export default function StepDetailScreen() {
         step?.title ? `Submit ${step.title}` : 'Reminder'
       );
     } else {
-      Alert.alert('Schedule Reminder', 'Reminder scheduling text input not available on Android via Alert.');
+      showAlert('Schedule Reminder', 'Reminder scheduling text input not available on Android via Alert.');
     }
   };
 
@@ -179,9 +181,9 @@ export default function StepDetailScreen() {
               if (block.uri) {
                 try {
                   await FileSystem.getInfoAsync(block.uri);
-                  Alert.alert('File', block.label || block.uri.split('/').pop() || 'Attachment');
+                  showAlert('File', block.label || block.uri.split('/').pop() || 'Attachment');
                 } catch {
-                  Alert.alert('File not found', 'The file may have been deleted.');
+                  showAlert('File not found', 'The file may have been deleted.');
                 }
               }
             }}

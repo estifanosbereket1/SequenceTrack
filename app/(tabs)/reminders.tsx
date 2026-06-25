@@ -1,6 +1,7 @@
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { useReminders } from '../../src/context/ReminderContext';
+import { useAlert } from '../../src/context/AlertContext';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { formatDateTime } from '../../src/utils/date';
@@ -9,10 +10,11 @@ import { typography } from '../../src/theme/typography';
 export default function RemindersTab() {
   const { colors } = useTheme();
   const { reminders, cancelReminder } = useReminders();
+  const { showAlert } = useAlert();
   const router = useRouter();
 
   const handleCancel = (item: { id: number; notification_id: string; title: string }) => {
-    Alert.alert(
+    showAlert(
       'Cancel Reminder',
       `Stop "${item.title}"?`,
       [

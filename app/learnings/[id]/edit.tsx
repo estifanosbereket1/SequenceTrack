@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Animated,
+  View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Animated,
 } from 'react-native';
 import { useTheme } from '../../../src/theme/ThemeProvider';
 import { useLearnings } from '../../../src/context/LearningContext';
+import { useAlert } from '../../../src/context/AlertContext';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { typography } from '../../../src/theme/typography';
@@ -17,6 +18,7 @@ export default function EditLearningScreen() {
   const entryId = parseInt(id, 10);
   const { colors } = useTheme();
   const { currentEntry, loadEntry, updateEntry, addAttachment } = useLearnings();
+  const { showAlert } = useAlert();
   const router = useRouter();
 
   const [title, setTitle] = useState('');
@@ -110,19 +112,19 @@ export default function EditLearningScreen() {
       return;
     }
 
-    Alert.alert('Start recording?', 'Record a voice note for this entry.', [
+    showAlert('Start recording?', 'Record a voice note for this entry.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Start', onPress: async () => {
           const granted = await requestRecordingPermissions();
           if (!granted) {
-            Alert.alert('Permission required', 'Microphone access is needed to record voice notes.');
+            showAlert('Permission required', 'Microphone access is needed to record voice notes.');
             return;
           }
           await setAudioModeForRecording();
           const mod = await loadAudioModule();
           if (!mod) {
-            Alert.alert('Not available', 'Voice recording is not available in this environment.');
+            showAlert('Not available', 'Voice recording is not available in this environment.');
             return;
           }
           try {
@@ -145,7 +147,7 @@ export default function EditLearningScreen() {
               setRecordingDuration(prev => prev + 1);
             }, 1000);
           } catch {
-            Alert.alert('Recording failed', 'Could not start recording.');
+            showAlert('Recording failed', 'Could not start recording.');
           }
         },
       },
@@ -161,7 +163,7 @@ export default function EditLearningScreen() {
   };
 
   const handleCancelRecording = () => {
-    Alert.alert('Discard recording?', 'This recording will be lost.', [
+    showAlert('Discard recording?', 'This recording will be lost.', [
       { text: 'Keep Recording', style: 'cancel' },
       {
         text: 'Discard', style: 'destructive', onPress: async () => {
@@ -179,7 +181,7 @@ export default function EditLearningScreen() {
 
   const removeNewAttachment = (index: number, type: string) => {
     if (type === 'voice') {
-      Alert.alert('Remove recording?', 'It will be deleted.', [
+      showAlert('Remove recording?', 'It will be deleted.', [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Remove', style: 'destructive', onPress: () => {
