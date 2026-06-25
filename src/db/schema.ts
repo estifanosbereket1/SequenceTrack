@@ -55,6 +55,21 @@ export const MIGRATIONS = [
         completed INTEGER,
         completed_at TEXT
       )`,
+      `CREATE TABLE IF NOT EXISTS reminders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        instance_id INTEGER NOT NULL REFERENCES instances(id) ON DELETE CASCADE,
+        instance_step_id INTEGER REFERENCES instance_steps(id) ON DELETE SET NULL,
+        title TEXT NOT NULL DEFAULT '',
+        scheduled_at TEXT NOT NULL,
+        repeat_rule TEXT,
+        notification_id TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+    ],
+  },
+  {
+    version: 2,
+    statements: [
       `CREATE TABLE IF NOT EXISTS learnings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT,
@@ -71,16 +86,6 @@ export const MIGRATIONS = [
         label TEXT,
         caption TEXT,
         duration_seconds REAL,
-        created_at TEXT NOT NULL DEFAULT (datetime('now'))
-      )`,
-      `CREATE TABLE IF NOT EXISTS reminders (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        instance_id INTEGER NOT NULL REFERENCES instances(id) ON DELETE CASCADE,
-        instance_step_id INTEGER REFERENCES instance_steps(id) ON DELETE SET NULL,
-        title TEXT NOT NULL DEFAULT '',
-        scheduled_at TEXT NOT NULL,
-        repeat_rule TEXT,
-        notification_id TEXT NOT NULL,
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
       )`,
     ],

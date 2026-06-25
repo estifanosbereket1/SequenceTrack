@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, AccessibilityInfo } from 'react-native';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { View, Text, TouchableOpacity, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
 import { loadAudioModule } from '../utils/audio';
@@ -10,6 +10,23 @@ interface AudioPlayerProps {
   durationSeconds?: number | null;
 }
 
+const BAR_COUNT = 40;
+const SPEEDS = [1, 1.5, 2] as const;
+
+function generateWaveform(seed: string): number[] {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+    hash |= 0;
+  }
+  const bars: number[] = [];
+  for (let i = 0; i < BAR_COUNT; i++) {
+    hash = (hash * 9301 + 49297) % 233280;
+    bars.push(0.15 + (hash / 233280) * 0.85);
+  }
+  return bars;
+}
+
 export default function AudioPlayer({ uri, durationSeconds }: AudioPlayerProps) {
   const { colors } = useTheme();
   const [player, setPlayer] = useState<any>(null);
@@ -17,12 +34,11 @@ export default function AudioPlayer({ uri, durationSeconds }: AudioPlayerProps) 
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(durationSeconds ?? 0);
   const [loading, setLoading] = useState(true);
+  const [speedIndex, setSpeedIndex] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [reduceMotion, setReduceMotion] = useState(false);
+  const waveformRef = useRef<View>(null);
 
-  useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
-  }, []);
+  const waveform = useMemo(() => generateWaveform(uri), [uri]);
 
   useEffect(() => {
     let mounted = true;
@@ -50,12 +66,19 @@ export default function AudioPlayer({ uri, durationSeconds }: AudioPlayerProps) 
     };
   }, [uri]);
 
+  const clearTimer = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+
   const togglePlay = () => {
     if (!player) return;
     if (playing) {
       player.pause();
       setPlaying(false);
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      clearTimer();
     } else {
       player.play();
       setPlaying(true);
@@ -65,8 +88,25 @@ export default function AudioPlayer({ uri, durationSeconds }: AudioPlayerProps) 
     }
   };
 
+  const cycleSpeed = () => {
+    if (!player) return;
+    const next = (speedIndex + 1) % SPEEDS.length;
+    setSpeedIndex(next);
+    player.setPlaybackRate(SPEEDS[next]);
+  };
+
+  const handleSeek = async (e: any) => {
+    if (!player || duration <= 0) return;
+    const x = e.nativeEvent.locationX;
+    const width = e.nativeEvent.target?.clientWidth ?? 1;
+    const ratio = x / (waveformRef.current?.clientWidth ?? width);
+    const seekTime = Math.max(0, Math.min(duration, ratio * duration));
+    await player.seekTo(seekTime);
+    setCurrentTime(seekTime);
+  };
+
   const progress = duration > 0 ? currentTime / duration : 0;
-  const remaining = Math.max(0, duration - currentTime);
+
   const timeStr = (sec: number) => {
     const m = Math.floor(sec / 60);
     const s = Math.floor(sec % 60);
@@ -97,23 +137,44 @@ export default function AudioPlayer({ uri, durationSeconds }: AudioPlayerProps) 
       <TouchableOpacity onPress={togglePlay} hitSlop={8} style={styles.playBtn}>
         <Ionicons
           name={playing ? 'pause-circle' : 'play-circle'}
-          size={32}
+          size={28}
           color={colors.accent.clay}
         />
       </TouchableOpacity>
-      <View style={styles.progressContainer}>
-        <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
-          <View
-            style={[
-              styles.progressFill,
-              { width: `${Math.min(100, progress * 100)}%`, backgroundColor: colors.accent.clay },
-            ]}
-          />
+
+      <Text style={[typography.monoSmall, { color: colors.text.muted, width: 34, textAlign: 'center' }]}>
+        {timeStr(currentTime)}
+      </Text>
+
+      <Pressable onPress={handleSeek} style={[styles.waveformContainer, { marginHorizontal: 6 }]}>
+        <View ref={waveformRef} style={styles.waveformRow}>
+          {waveform.map((h, i) => {
+            const filled = i / BAR_COUNT <= progress;
+            return (
+              <View
+                key={i}
+                style={{
+                  width: 3,
+                  height: Math.max(3, h * 36),
+                  borderRadius: 1.5,
+                  backgroundColor: filled ? colors.accent.clay : colors.border,
+                  marginRight: 2,
+                }}
+              />
+            );
+          })}
         </View>
-        <Text style={[typography.monoSmall, { color: colors.text.muted, marginTop: 2 }]}>
-          {timeStr(currentTime)} / {timeStr(duration)}
+      </Pressable>
+
+      <Text style={[typography.monoSmall, { color: colors.text.muted, width: 34, textAlign: 'center' }]}>
+        {timeStr(duration)}
+      </Text>
+
+      <TouchableOpacity onPress={cycleSpeed} hitSlop={6} style={[styles.speedPill, { borderColor: colors.border }]}>
+        <Text style={[typography.monoSmall, { color: colors.text.muted, fontSize: 11 }]}>
+          {SPEEDS[speedIndex]}×
         </Text>
-      </View>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -122,23 +183,26 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     borderRadius: 12,
     marginBottom: 6,
   },
   playBtn: {
-    marginRight: 10,
+    marginRight: 6,
   },
-  progressContainer: {
+  waveformContainer: {
     flex: 1,
   },
-  progressTrack: {
-    height: 4,
-    borderRadius: 2,
-    overflow: 'hidden',
+  waveformRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  progressFill: {
-    height: '100%',
-    borderRadius: 2,
+  speedPill: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginLeft: 4,
   },
 });
