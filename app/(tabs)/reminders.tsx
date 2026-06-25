@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { useReminders } from '../../src/context/ReminderContext';
@@ -6,12 +7,27 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { formatDateTime } from '../../src/utils/date';
 import { typography } from '../../src/theme/typography';
+import TooltipOverlay from '../../src/components/TooltipOverlay';
+import { getAppMetaValue, setAppMeta } from '../../src/db/appMeta';
 
 export default function RemindersTab() {
   const { colors } = useTheme();
   const { reminders, cancelReminder } = useReminders();
   const { showAlert } = useAlert();
   const router = useRouter();
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const seen = await getAppMetaValue('tooltip_seen_reminders');
+      if (seen !== 'true') setTooltipVisible(true);
+    })();
+  }, []);
+
+  const dismissTooltip = async () => {
+    setTooltipVisible(false);
+    await setAppMeta('tooltip_seen_reminders', 'true');
+  };
 
   const handleCancel = (item: { id: number; notification_id: string; title: string }) => {
     showAlert(
@@ -69,6 +85,12 @@ export default function RemindersTab() {
           )}
         />
       )}
+      <TooltipOverlay
+        visible={tooltipVisible}
+        message="Long-press a reminder to cancel it, or tap the × icon."
+        iconName="notifications-outline"
+        onDismiss={dismissTooltip}
+      />
     </View>
   );
 }

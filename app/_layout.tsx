@@ -41,6 +41,8 @@ function RootLayoutInner() {
         headerShadowVisible: false,
         contentStyle: { backgroundColor: colors.bg.paper },
       }}>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="templates/new" options={{ title: 'New Template', presentation: 'modal' }} />
         <Stack.Screen name="templates/[id]/edit" options={{ title: 'Edit Template' }} />

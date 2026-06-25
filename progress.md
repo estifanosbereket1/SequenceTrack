@@ -86,3 +86,40 @@ Test in Expo Go on a device/simulator via `npx expo start`. Verify:
 5. PDF export
 6. Reminder scheduling (will show Alert fallback on Android/Expo Go)
 7. **New:** Learnings tab — create, edit, view entries with markdown, photo/file/voice attachments
+
+## Phase 10: Onboarding, Tutorials & Settings Tab — COMPLETE (2026-06-25)
+
+### What was done
+- **DB schema migration v3**: Added `app_meta` (key-value) and `profile` (single-row) tables
+- **DB modules**: `src/db/appMeta.ts` (typed CRUD for key-value pairs), `src/db/profile.ts` (get/upsert for profile)
+- **Types**: Added `AppMeta` and `Profile` interfaces to `src/types/index.ts`
+- **Root redirect** (`app/index.tsx`): Checks `has_onboarded` on launch, routes to onboarding or tabs
+- **Onboarding flow** (3 screens):
+  - `app/onboarding/index.tsx` — Welcome screen with "Get started" CTA
+  - `app/onboarding/profile.tsx` — Name input (required) + optional circular photo picker via expo-image-picker
+  - `app/onboarding/confirm.tsx` — Shows name/photo, "Open the app" writes profile + sets `has_onboarded`
+- **Walkthrough modal** (`src/components/WalkthroughModal.tsx`): 4-slide swipeable overlay (Templates, Instances, Learnings, Reminders) with Skip/Done, shown once via `walkthrough_seen` flag
+- **Tooltip overlay** (`src/components/TooltipOverlay.tsx`): Centered card with icon + message + "Got it" button, triggered per-screen once via `tooltip_seen_*` flags. Wired into 4 screens: Templates, Learnings, Reminders, Instance Detail
+- **Settings tab** (`app/(tabs)/settings.tsx`): 5th tab with gear icon. Four sections:
+  - Profile — inline modal editor for name + photo
+  - Notifications — master toggle + default reminder time (HH:MM text inputs)
+  - Data — JSON export via expo-sharing, double-confirm purge (wipes DB + files, resets onboarding)
+  - About — version from expo-constants, reset tutorials button
+- **Tab layout**: 5th tab added in `(tabs)/_layout.tsx`, walkthrough trigger on mount
+- TypeScript compiles with zero errors (`npx tsc --noEmit`)
+
+### Files created (12)
+- `app/index.tsx`, `app/onboarding/_layout.tsx`, `app/onboarding/index.tsx`, `app/onboarding/profile.tsx`, `app/onboarding/confirm.tsx`
+- `app/(tabs)/settings.tsx`
+- `src/components/WalkthroughModal.tsx`, `src/components/TooltipOverlay.tsx`
+- `src/db/appMeta.ts`, `src/db/profile.ts`
+
+### Files modified (10)
+- `src/db/schema.ts` — migration v3
+- `src/types/index.ts` — AppMeta + Profile types
+- `app/_layout.tsx` — added index + onboarding stack screens
+- `app/(tabs)/_layout.tsx` — added settings tab + walkthrough trigger
+- `app/(tabs)/templates.tsx` — tooltip
+- `app/(tabs)/learnings.tsx` — tooltip
+- `app/(tabs)/reminders.tsx` — tooltip
+- `app/instances/[id]/index.tsx` — tooltip

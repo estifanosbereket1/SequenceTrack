@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { useLearnings } from '../../src/context/LearningContext';
@@ -5,6 +6,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { typography } from '../../src/theme/typography';
 import { formatDate } from '../../src/utils/date';
+import TooltipOverlay from '../../src/components/TooltipOverlay';
+import { getAppMetaValue, setAppMeta } from '../../src/db/appMeta';
 
 function stripMarkdown(md: string): string {
   return md
@@ -33,6 +36,19 @@ export default function LearningsTab() {
   const { colors } = useTheme();
   const { entries } = useLearnings();
   const router = useRouter();
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const seen = await getAppMetaValue('tooltip_seen_learnings');
+      if (seen !== 'true') setTooltipVisible(true);
+    })();
+  }, []);
+
+  const dismissTooltip = async () => {
+    setTooltipVisible(false);
+    await setAppMeta('tooltip_seen_learnings', 'true');
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg.paper }]}>
@@ -102,6 +118,12 @@ export default function LearningsTab() {
           </View>
         )}
       </View>
+      <TooltipOverlay
+        visible={tooltipVisible}
+        message="Tap New Entry to add a learning entry with markdown and attachments."
+        iconName="book-outline"
+        onDismiss={dismissTooltip}
+      />
     </View>
   );
 }

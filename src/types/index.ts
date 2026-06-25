@@ -99,3 +99,16 @@ export interface LearningAttachment {
   duration_seconds: number | null;
   created_at: string;
 }
+
+export interface AppMeta {
+  key: string;
+  value: string;
+}
+
+export interface Profile {
+  id: number;
+  name: string;
+  photo_uri: string | null;
+  created_at: string;
+  updated_at: string;
+}

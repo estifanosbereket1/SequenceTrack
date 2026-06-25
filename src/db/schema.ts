@@ -90,4 +90,20 @@ export const MIGRATIONS = [
       )`,
     ],
   },
+  {
+    version: 3,
+    statements: [
+      `CREATE TABLE IF NOT EXISTS app_meta (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      )`,
+      `CREATE TABLE IF NOT EXISTS profile (
+        id INTEGER PRIMARY KEY DEFAULT 1,
+        name TEXT NOT NULL,
+        photo_uri TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`,
+    ],
+  },
 ];

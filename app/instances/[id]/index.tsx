@@ -9,6 +9,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { typography } from '../../../src/theme/typography';
 import { formatDate, formatDateTime } from '../../../src/utils/date';
 import { exportInstancePdf } from '../../../src/utils/pdf';
+import TooltipOverlay from '../../../src/components/TooltipOverlay';
+import { getAppMetaValue, setAppMeta } from '../../../src/db/appMeta';
 
 export default function InstanceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -18,6 +20,20 @@ export default function InstanceDetailScreen() {
   const { scheduleReminder } = useReminders();
   const { showAlert } = useAlert();
   const router = useRouter();
+
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const seen = await getAppMetaValue('tooltip_seen_instance_detail');
+      if (seen !== 'true') setTooltipVisible(true);
+    })();
+  }, []);
+
+  const dismissTooltip = async () => {
+    setTooltipVisible(false);
+    await setAppMeta('tooltip_seen_instance_detail', 'true');
+  };
 
   const [showReminderPicker, setShowReminderPicker] = useState(false);
 
@@ -181,6 +197,12 @@ export default function InstanceDetailScreen() {
             </TouchableOpacity>
           );
         }}
+      />
+      <TooltipOverlay
+        visible={tooltipVisible}
+        message="Tap a step to view its blocks and check items off."
+        iconName="checkbox-outline"
+        onDismiss={dismissTooltip}
       />
     </View>
   );

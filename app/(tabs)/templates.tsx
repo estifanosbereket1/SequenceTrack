@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { useTemplates } from '../../src/context/TemplateContext';
@@ -5,11 +6,26 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { formatDate } from '../../src/utils/date';
 import { typography } from '../../src/theme/typography';
+import TooltipOverlay from '../../src/components/TooltipOverlay';
+import { getAppMetaValue, setAppMeta } from '../../src/db/appMeta';
 
 export default function TemplatesScreen() {
   const { colors } = useTheme();
   const { templates, deleteTemplate } = useTemplates();
   const router = useRouter();
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const seen = await getAppMetaValue('tooltip_seen_templates');
+      if (seen !== 'true') setTooltipVisible(true);
+    })();
+  }, []);
+
+  const dismissTooltip = async () => {
+    setTooltipVisible(false);
+    await setAppMeta('tooltip_seen_templates', 'true');
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg.paper }]}>
@@ -60,6 +76,12 @@ export default function TemplatesScreen() {
           )}
         />
       )}
+      <TooltipOverlay
+        visible={tooltipVisible}
+        message="To create a template, tap New Template at the top."
+        iconName="document-text-outline"
+        onDismiss={dismissTooltip}
+      />
     </View>
   );
 }
