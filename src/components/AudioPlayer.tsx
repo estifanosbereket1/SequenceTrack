@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Pressable, StyleSheet } from 'react-native';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { View, Text, TouchableOpacity, Pressable, StyleSheet, LayoutChangeEvent } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeProvider';
 import { loadAudioModule } from '../utils/audio';
@@ -36,7 +36,7 @@ export default function AudioPlayer({ uri, durationSeconds }: AudioPlayerProps) 
   const [loading, setLoading] = useState(true);
   const [speedIndex, setSpeedIndex] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const waveformRef = useRef<View>(null);
+  const waveformWidthRef = useRef(1);
 
   const waveform = useMemo(() => generateWaveform(uri), [uri]);
 
@@ -66,12 +66,16 @@ export default function AudioPlayer({ uri, durationSeconds }: AudioPlayerProps) 
     };
   }, [uri]);
 
-  const clearTimer = () => {
+  const clearTimer = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-  };
+  }, []);
+
+  const onWaveformLayout = useCallback((e: LayoutChangeEvent) => {
+    waveformWidthRef.current = e.nativeEvent.layout.width;
+  }, []);
 
   const togglePlay = () => {
     if (!player) return;
@@ -84,6 +88,9 @@ export default function AudioPlayer({ uri, durationSeconds }: AudioPlayerProps) 
       setPlaying(true);
       intervalRef.current = setInterval(() => {
         setCurrentTime(player.currentTime ?? 0);
+        if (player.duration > 0 && player.duration !== duration) {
+          setDuration(player.duration);
+        }
       }, 250);
     }
   };
@@ -98,9 +105,8 @@ export default function AudioPlayer({ uri, durationSeconds }: AudioPlayerProps) 
   const handleSeek = async (e: any) => {
     if (!player || duration <= 0) return;
     const x = e.nativeEvent.locationX;
-    const width = e.nativeEvent.target?.clientWidth ?? 1;
-    const ratio = x / (waveformRef.current?.clientWidth ?? width);
-    const seekTime = Math.max(0, Math.min(duration, ratio * duration));
+    const ratio = Math.max(0, Math.min(1, x / waveformWidthRef.current));
+    const seekTime = ratio * duration;
     await player.seekTo(seekTime);
     setCurrentTime(seekTime);
   };
@@ -147,7 +153,7 @@ export default function AudioPlayer({ uri, durationSeconds }: AudioPlayerProps) 
       </Text>
 
       <Pressable onPress={handleSeek} style={[styles.waveformContainer, { marginHorizontal: 6 }]}>
-        <View ref={waveformRef} style={styles.waveformRow}>
+        <View onLayout={onWaveformLayout} style={styles.waveformRow}>
           {waveform.map((h, i) => {
             const filled = i / BAR_COUNT <= progress;
             return (

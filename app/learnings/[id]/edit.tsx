@@ -32,6 +32,7 @@ export default function EditLearningScreen() {
   const [recording, setRecording] = useState(false);
   const [recorder, setRecorder] = useState<any>(null);
   const [recordingDuration, setRecordingDuration] = useState(0);
+  const [savedVoice, setSavedVoice] = useState(false);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const recordingDotAnim = useRef(new Animated.Value(1)).current;
 
@@ -93,18 +94,6 @@ export default function EditLearningScreen() {
   };
 
   const handleAddVoice = async () => {
-    const granted = await requestRecordingPermissions();
-    if (!granted) {
-      Alert.alert('Permission required', 'Microphone access is needed to record voice notes.');
-      return;
-    }
-    await setAudioModeForRecording();
-    const mod = await loadAudioModule();
-    if (!mod) {
-      Alert.alert('Not available', 'Voice recording is not available in this environment.');
-      return;
-    }
-
     if (recording && recorder) {
       await recorder.stop();
       if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
@@ -113,34 +102,54 @@ export default function EditLearningScreen() {
       setRecording(false);
       setRecorder(null);
       setRecordingDuration(0);
+      setSavedVoice(true);
       if (uri) {
         setNewAttachments(prev => [...prev, { type: 'voice', uri, label: null, caption: null, durationSeconds: duration }]);
       }
+      setTimeout(() => setSavedVoice(false), 1500);
       return;
     }
 
-    try {
-      const AudioRecorderClass = mod.AudioModule.AudioRecorder;
-      const r = new AudioRecorderClass({
-        extension: '.m4a',
-        sampleRate: 44100,
-        numberOfChannels: 1,
-        bitRate: 64000,
-        android: { outputFormat: 'mpeg4', audioEncoder: 'aac' },
-        ios: { outputFormat: 0, audioQuality: 127, linearPCMBitDepth: 16, linearPCMIsBigEndian: false, linearPCMIsFloat: false },
-        web: { mimeType: 'audio/webm', bitsPerSecond: 64000 },
-      });
-      await r.prepareToRecordAsync();
-      r.record();
-      setRecorder(r);
-      setRecording(true);
-      setRecordingDuration(0);
-      recordingTimerRef.current = setInterval(() => {
-        setRecordingDuration(prev => prev + 1);
-      }, 1000);
-    } catch {
-      Alert.alert('Recording failed', 'Could not start recording.');
-    }
+    Alert.alert('Start recording?', 'Record a voice note for this entry.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Start', onPress: async () => {
+          const granted = await requestRecordingPermissions();
+          if (!granted) {
+            Alert.alert('Permission required', 'Microphone access is needed to record voice notes.');
+            return;
+          }
+          await setAudioModeForRecording();
+          const mod = await loadAudioModule();
+          if (!mod) {
+            Alert.alert('Not available', 'Voice recording is not available in this environment.');
+            return;
+          }
+          try {
+            const AudioRecorderClass = mod.AudioModule.AudioRecorder;
+            const r = new AudioRecorderClass({
+              extension: '.m4a',
+              sampleRate: 44100,
+              numberOfChannels: 1,
+              bitRate: 64000,
+              android: { outputFormat: 'mpeg4', audioEncoder: 'aac' },
+              ios: { outputFormat: 0, audioQuality: 127, linearPCMBitDepth: 16, linearPCMIsBigEndian: false, linearPCMIsFloat: false },
+              web: { mimeType: 'audio/webm', bitsPerSecond: 64000 },
+            });
+            await r.prepareToRecordAsync();
+            r.record();
+            setRecorder(r);
+            setRecording(true);
+            setRecordingDuration(0);
+            recordingTimerRef.current = setInterval(() => {
+              setRecordingDuration(prev => prev + 1);
+            }, 1000);
+          } catch {
+            Alert.alert('Recording failed', 'Could not start recording.');
+          }
+        },
+      },
+    ]);
   };
 
   const handleSave = async () => {
@@ -201,7 +210,7 @@ export default function EditLearningScreen() {
     <View style={{ flex: 1 }}>
       <ScrollView
         style={[styles.container, { backgroundColor: colors.bg.paper }]}
-        contentContainerStyle={{ paddingBottom: recording ? 80 : 0 }}
+        contentContainerStyle={{ paddingBottom: 0 }}
         keyboardShouldPersistTaps="handled"
       >
         <TextInput
@@ -232,19 +241,51 @@ export default function EditLearningScreen() {
           </Text>
 
           <View style={styles.addRow}>
-            <TouchableOpacity style={[styles.attBtn, { borderColor: colors.border }]} onPress={handleAddPhoto}>
-              <Ionicons name="camera-outline" size={20} color={colors.accent.clay} />
-              <Text style={[typography.caption, { color: colors.accent.clay, marginLeft: 4 }]}>Photo</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.attBtn, { borderColor: colors.border }]} onPress={handleAddFile}>
-              <Ionicons name="document-outline" size={20} color={colors.accent.clay} />
-              <Text style={[typography.caption, { color: colors.accent.clay, marginLeft: 4 }]}>File</Text>
-            </TouchableOpacity>
+            {!recording && (
+              <>
+                <TouchableOpacity style={[styles.attBtn, { borderColor: colors.border }]} onPress={handleAddPhoto}>
+                  <Ionicons name="camera-outline" size={20} color={colors.accent.clay} />
+                  <Text style={[typography.caption, { color: colors.accent.clay, marginLeft: 4 }]}>Photo</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.attBtn, { borderColor: colors.border }]} onPress={handleAddFile}>
+                  <Ionicons name="document-outline" size={20} color={colors.accent.clay} />
+                  <Text style={[typography.caption, { color: colors.accent.clay, marginLeft: 4 }]}>File</Text>
+                </TouchableOpacity>
+              </>
+            )}
             <TouchableOpacity style={[styles.attBtn, { borderColor: colors.border }]} onPress={handleAddVoice}>
-              <Ionicons name="mic-outline" size={20} color={colors.accent.clay} />
-              <Text style={[typography.caption, { color: colors.accent.clay, marginLeft: 4 }]}>Voice</Text>
+              <Ionicons name={recording ? 'stop-circle' : 'mic-outline'} size={20} color={recording ? colors.status.overdue : colors.accent.clay} />
+              <Text style={[typography.caption, { color: recording ? colors.status.overdue : colors.accent.clay, marginLeft: 4 }]}>
+                {recording ? 'Stop' : 'Voice'}
+              </Text>
             </TouchableOpacity>
           </View>
+
+          {recording && (
+            <View style={[styles.inlineRecordingBar, { backgroundColor: colors.bg.cardSecondary, borderColor: colors.border }]}>
+              <TouchableOpacity onPress={handleCancelRecording} hitSlop={8}>
+                <Ionicons name="trash-outline" size={22} color={colors.status.overdue} />
+              </TouchableOpacity>
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', marginLeft: 12 }}>
+                <Animated.View style={[styles.recordingDot, { opacity: recordingDotAnim }]} />
+                <Text style={[typography.bodySmall, { color: colors.status.overdue, marginLeft: 8 }]}>
+                  {formatTime(recordingDuration)}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={handleAddVoice} hitSlop={8}>
+                <Ionicons name="stop-circle" size={28} color={colors.status.overdue} />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {savedVoice && (
+            <View style={[styles.savedBanner, { backgroundColor: colors.bg.cardSecondary }]}>
+              <Ionicons name="checkmark-circle" size={18} color={colors.status.done} />
+              <Text style={[typography.bodySmall, { color: colors.status.done, marginLeft: 6 }]}>
+                Voice note saved ✓
+              </Text>
+            </View>
+          )}
 
           {currentEntry.attachments.length > 0 && (
             <>
@@ -312,23 +353,6 @@ export default function EditLearningScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
-
-      {recording && (
-        <View style={[styles.recordingBar, { backgroundColor: colors.bg.card, borderTopColor: colors.border }]}>
-          <TouchableOpacity onPress={handleCancelRecording} hitSlop={8}>
-            <Ionicons name="trash-outline" size={24} color={colors.status.overdue} />
-          </TouchableOpacity>
-          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', marginLeft: 12 }}>
-            <Animated.View style={[styles.recordingDot, { opacity: recordingDotAnim }]} />
-            <Text style={[typography.bodySmall, { color: colors.status.overdue, marginLeft: 8 }]}>
-              {formatTime(recordingDuration)}
-            </Text>
-          </View>
-          <TouchableOpacity onPress={handleAddVoice} hitSlop={8}>
-            <Ionicons name="stop-circle" size={32} color={colors.status.overdue} />
-          </TouchableOpacity>
-        </View>
-      )}
     </View>
   );
 }
@@ -380,16 +404,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
   },
-  recordingBar: {
+  inlineRecordingBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderTopWidth: 0.5,
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 0.5,
+    marginBottom: 6,
+  },
+  savedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 6,
   },
   recordingDot: {
     width: 10,
